@@ -1456,6 +1456,43 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
           </button>
         </div>
       </div>
+
+      <!-- Filtros de Pago Inicial (Postura Mínima) -->
+      <div class="filtros-modalidad-wrapper" style="border-top: 1px dashed #e2e8f0; margin-top: 12px; padding-top: 12px;">
+        <span class="filtro-modalidad-label">💰 Pago Inicial:</span>
+        <div class="filtros-modalidad-pills" id="grupo-precio">
+          <button class="pill-filtro active" data-precio="todos" onclick="setFiltroPrecio('todos', this)">
+            Todos los montos
+          </button>
+          <button class="pill-filtro" data-precio="cero" onclick="setFiltroPrecio('cero', this)" title="Remates donde los bienes parten en $0 (sin postura mínima)">
+            🟢 Sin Mínimo ($ 0) <span class="pill-count" id="count-p-cero">0</span>
+          </button>
+          <button class="pill-filtro" data-precio="hasta-1m" onclick="setFiltroPrecio('hasta-1m', this)" title="Postura mínima de hasta $ 1.000.000">
+            🪙 Hasta $ 1M <span class="pill-count" id="count-p-1m">0</span>
+          </button>
+          <button class="pill-filtro" data-precio="1m-3m" onclick="setFiltroPrecio('1m-3m', this)" title="Postura mínima entre 1 y 3 millones de pesos">
+            💵 $ 1M a $ 3M <span class="pill-count" id="count-p-1m-3m">0</span>
+          </button>
+          <button class="pill-filtro" data-precio="3m-5m" onclick="setFiltroPrecio('3m-5m', this)" title="Postura mínima entre 3 y 5 millones de pesos">
+            🚙 $ 3M a $ 5M <span class="pill-count" id="count-p-3m-5m">0</span>
+          </button>
+          <button class="pill-filtro" data-precio="mas-5m" onclick="setFiltroPrecio('mas-5m', this)" title="Postura mínima superior a 5 millones de pesos">
+            💎 Más de $ 5M <span class="pill-count" id="count-p-mas-5m">0</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Barra de Ordenamiento -->
+      <div class="filtros-modalidad-wrapper" style="border-top: 1px dashed #e2e8f0; margin-top: 12px; padding-top: 12px; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="filtro-modalidad-label">↕️ Ordenar por:</span>
+          <select id="sel-orden" onchange="cambiarOrdenamiento(this.value)" style="padding: 9px 16px; border: 1.5px solid #cbd5e1; border-radius: 12px; font-weight: 700; font-family: inherit; font-size: 0.94rem; background: #f8fafc; color: #334155; cursor: pointer; outline: none;">
+            <option value="fecha">📅 Fecha más próxima</option>
+            <option value="precio-asc">💰 Menor pago inicial primero</option>
+            <option value="precio-desc">💎 Mayor pago inicial primero</option>
+          </select>
+        </div>
+      </div>
     </div>
 
     <div class="grid-remates" id="contenedor-remates"></div>
@@ -1647,6 +1684,33 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
     }}
 
     let filtroModalidad = 'todos';
+    let filtroPrecio = 'todos';
+    let ordenActual = 'fecha';
+
+    function parsePrecioNumero(valorMinimoStr) {{
+      if (!valorMinimoStr) return 0;
+      const match = String(valorMinimoStr).replace(/[.]/g, '').match(/[0-9]+/);
+      return match ? parseInt(match[0], 10) : 0;
+    }}
+
+    function parseFechaSort(fechaStr) {{
+      if (!fechaStr) return 9999999999999;
+      const partes = String(fechaStr).trim().split(" ");
+      const fPartes = partes[0].split(partes[0].includes("/") ? "/" : "-");
+      if (fPartes.length >= 3) {{
+        const d = parseInt(fPartes[0], 10);
+        const m = parseInt(fPartes[1], 10) - 1;
+        const y = parseInt(fPartes[2], 10);
+        let h = 23, mi = 59;
+        if (partes[1] && partes[1].includes(":")) {{
+          const hPartes = partes[1].split(":");
+          h = parseInt(hPartes[0], 10) || 0;
+          mi = parseInt(hPartes[1], 10) || 0;
+        }}
+        return new Date(y, m, d, h, mi).getTime();
+      }}
+      return 9999999999999;
+    }}
 
     function setFiltroModalidad(mod, btn) {{
       filtroModalidad = mod;
@@ -1655,7 +1719,19 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
       filtrarTarjetas();
     }}
 
-    function actualizarContadoresModalidad() {{
+    function setFiltroPrecio(precio, btn) {{
+      filtroPrecio = precio;
+      document.querySelectorAll('#grupo-precio .pill-filtro').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      filtrarTarjetas();
+    }}
+
+    function cambiarOrdenamiento(val) {{
+      ordenActual = val;
+      filtrarTarjetas();
+    }}
+
+    function actualizarContadoresFiltros() {{
       const total = remates.length;
       const online = remates.filter(r => (r.modalidad || '').toUpperCase().includes('ONLINE')).length;
       const presencial = remates.filter(r => (r.modalidad || '').toUpperCase() === 'PRESENCIAL').length;
@@ -1670,12 +1746,44 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
       if (cOnline) cOnline.textContent = online;
       if (cPres) cPres.textContent = presencial;
       if (cMixto) cMixto.textContent = mixto;
+
+      // Contadores de Pago Inicial (Postura Mínima)
+      const pCero = remates.filter(r => parsePrecioNumero(r.valor_minimo) === 0).length;
+      const p1m = remates.filter(r => {{ const p = parsePrecioNumero(r.valor_minimo); return p > 0 && p <= 1000000; }}).length;
+      const p1m3m = remates.filter(r => {{ const p = parsePrecioNumero(r.valor_minimo); return p > 1000000 && p <= 3000000; }}).length;
+      const p3m5m = remates.filter(r => {{ const p = parsePrecioNumero(r.valor_minimo); return p > 3000000 && p <= 5000000; }}).length;
+      const pMas5m = remates.filter(r => parsePrecioNumero(r.valor_minimo) > 5000000).length;
+
+      const elCero = document.getElementById('count-p-cero');
+      const el1m = document.getElementById('count-p-1m');
+      const el1m3m = document.getElementById('count-p-1m-3m');
+      const el3m5m = document.getElementById('count-p-3m-5m');
+      const elMas5m = document.getElementById('count-p-mas-5m');
+
+      if (elCero) elCero.textContent = pCero;
+      if (el1m) el1m.textContent = p1m;
+      if (el1m3m) el1m3m.textContent = p1m3m;
+      if (el3m5m) el3m5m.textContent = p3m5m;
+      if (elMas5m) elMas5m.textContent = pMas5m;
     }}
 
     function resetearFiltrosCompletos() {{
       document.getElementById("buscador").value = "";
-      const btnTodos = document.querySelector('#grupo-modalidad .pill-filtro[data-mod="todos"]');
-      setFiltroModalidad('todos', btnTodos);
+      filtroModalidad = 'todos';
+      filtroPrecio = 'todos';
+      ordenActual = 'fecha';
+      const selOrden = document.getElementById("sel-orden");
+      if (selOrden) selOrden.value = "fecha";
+
+      document.querySelectorAll('#grupo-modalidad .pill-filtro').forEach(b => b.classList.remove('active'));
+      const btnTodosMod = document.querySelector('#grupo-modalidad .pill-filtro[data-mod="todos"]');
+      if (btnTodosMod) btnTodosMod.classList.add('active');
+
+      document.querySelectorAll('#grupo-precio .pill-filtro').forEach(b => b.classList.remove('active'));
+      const btnTodosPre = document.querySelector('#grupo-precio .pill-filtro[data-precio="todos"]');
+      if (btnTodosPre) btnTodosPre.classList.add('active');
+
+      filtrarTarjetas();
     }}
 
     function filtrarTarjetas() {{
@@ -1683,7 +1791,7 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
       const btnClear = document.getElementById("btn-limpiar");
       btnClear.style.display = q ? "flex" : "none";
 
-      const terminos = q ? q.split(/\\s+/).filter(t => t.length > 0) : [];
+      const terminos = q ? q.split(" ").map(t => t.trim()).filter(t => t.length > 0) : [];
 
       const filtrados = remates.filter(r => {{
         // 1. Filtro por Modalidad
@@ -1696,7 +1804,21 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
           if (!mod.includes("MIXTO")) return false;
         }}
 
-        // 2. Filtro por Términos de Texto
+        // 2. Filtro por Pago Inicial (Postura Mínima)
+        const precio = parsePrecioNumero(r.valor_minimo);
+        if (filtroPrecio === 'cero') {{
+          if (precio !== 0) return false;
+        }} else if (filtroPrecio === 'hasta-1m') {{
+          if (precio === 0 || precio > 1000000) return false;
+        }} else if (filtroPrecio === '1m-3m') {{
+          if (precio <= 1000000 || precio > 3000000) return false;
+        }} else if (filtroPrecio === '3m-5m') {{
+          if (precio <= 3000000 || precio > 5000000) return false;
+        }} else if (filtroPrecio === 'mas-5m') {{
+          if (precio <= 5000000) return false;
+        }}
+
+        // 3. Filtro por Términos de Texto
         if (terminos.length === 0) return true;
         let texto = (r.comuna + " " + r.region + " " + r.direccion + " " + r.modalidad + " " + r.tribunal + " " + r.rol + " " + r.codigo + " " + (r.deudor || "") + " " + (r.detalle || "") + " " + r.articulos.join(" ")).toLowerCase();
         if (r.vehiculos && r.vehiculos.length > 0) {{
@@ -1706,6 +1828,16 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
         }}
         return terminos.every(term => texto.includes(term));
       }});
+
+      // 4. Ordenamiento
+      if (ordenActual === 'precio-asc') {{
+        filtrados.sort((a, b) => parsePrecioNumero(a.valor_minimo) - parsePrecioNumero(b.valor_minimo));
+      }} else if (ordenActual === 'precio-desc') {{
+        filtrados.sort((a, b) => parsePrecioNumero(b.valor_minimo) - parsePrecioNumero(a.valor_minimo));
+      }} else if (ordenActual === 'fecha') {{
+        filtrados.sort((a, b) => parseFechaSort(a.fecha) - parseFechaSort(b.fecha));
+      }}
+
       renderizarRemates(filtrados);
     }}
 
@@ -1731,7 +1863,7 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
       try {{ localStorage.setItem('remates_font_scale', escala); }} catch(e) {{}}
     }}
 
-    actualizarContadoresModalidad();
+    actualizarContadoresFiltros();
     renderizarRemates(remates);
   </script>
 </body>
