@@ -82,9 +82,9 @@ def index():
           ¿Qué tipo de bienes deseas consultar? (Todo Chile):
         </label>
         <select id="sel-tipo" style="width: 100%; padding: 14px 18px; font-size: 1.1rem; font-weight: 800; font-family: inherit; border: 2px solid #cbd5e1; border-radius: 14px; background: #f8fafc; color: #0f172a; outline: none; cursor: pointer; transition: all 0.2s;">
-          <option value="muebles" selected>🛋️ Muebles, Autos y Cosas (Vehículos, tecnología, herramientas...)</option>
-          <option value="inmuebles">🏠 Bienes Inmuebles (Casas, departamentos y terrenos)</option>
-          <option value="ambos">✨ Todos los Bienes (Muebles + Inmuebles)</option>
+          <option value="muebles" selected>Bienes muebles</option>
+          <option value="inmuebles">Bienes Inmuebles</option>
+          <option value="ambos">Todos los Bienes</option>
         </select>
       </div>
 

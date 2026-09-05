@@ -996,6 +996,70 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
       transition: all 0.15s ease;
     }}
     .font-btn:hover {{ background: #e2e8f0; color: #0f172a; }}
+    /* Filtros por Modalidad */
+    .filtros-modalidad-wrapper {{
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+      width: 100%;
+      padding-top: 14px;
+      border-top: 1px solid #f1f5f9;
+    }}
+    .filtro-modalidad-label {{
+      font-size: 0.96rem;
+      font-weight: 800;
+      color: #475569;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }}
+    .filtros-modalidad-pills {{
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }}
+    .pill-filtro {{
+      background: #f8fafc;
+      color: #334155;
+      border: 1.5px solid #cbd5e1;
+      border-radius: 9999px;
+      padding: 7px 16px;
+      font-size: 0.94rem;
+      font-weight: 700;
+      font-family: inherit;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+      user-select: none;
+    }}
+    .pill-filtro:hover {{
+      background: #f1f5f9;
+      border-color: #94a3b8;
+      transform: translateY(-1px);
+    }}
+    .pill-filtro.active {{
+      background: #0284c7;
+      color: #ffffff;
+      border-color: #0284c7;
+      box-shadow: 0 3px 10px rgba(2, 132, 199, 0.35);
+    }}
+    .pill-count {{
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      font-size: 0.8rem;
+      font-weight: 800;
+      background: #e2e8f0;
+      color: #475569;
+      transition: all 0.2s ease;
+    }}
+    .pill-filtro.active .pill-count {{
+      background: rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+    }}
     .grid-remates {{ display: flex; flex-direction: column; gap: 26px; }}
     .card {{
       background: var(--card-bg);
@@ -1358,18 +1422,39 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
     </header>
 
     <div class="toolbar">
-      <div class="search-box">
-        <span class="search-icon">🔍</span>
-        <input type="text" id="buscador" placeholder="Buscar por ciudad, patente, marca o artículo (ej: Talca, Ford, televisor)..." oninput="filtrarTarjetas()">
-        <button id="btn-limpiar" class="btn-clear-search" onclick="limpiarBuscador()" title="Limpiar búsqueda">✕</button>
-      </div>
-      <div class="actions-group">
-        <div class="font-controls" title="Ajustar tamaño de letra para lectura cómoda">
-          <button class="font-btn" onclick="cambiarTamano(-0.1)" title="Reducir letra">A -</button>
-          <button class="font-btn" onclick="cambiarTamano(0)" title="Tamaño normal">A</button>
-          <button class="font-btn" onclick="cambiarTamano(0.15)" title="Aumentar letra">A +</button>
+      <div style="display: flex; gap: 16px; width: 100%; flex-wrap: wrap; align-items: center; justify-content: space-between;">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="buscador" placeholder="Buscar por ciudad, patente, marca o artículo (ej: Talca, Ford, televisor)..." oninput="filtrarTarjetas()">
+          <button id="btn-limpiar" class="btn-clear-search" onclick="limpiarBuscador()" title="Limpiar búsqueda">✕</button>
         </div>
-        <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
+        <div class="actions-group">
+          <div class="font-controls" title="Ajustar tamaño de letra para lectura cómoda">
+            <button class="font-btn" onclick="cambiarTamano(-0.1)" title="Reducir letra">A -</button>
+            <button class="font-btn" onclick="cambiarTamano(0)" title="Tamaño normal">A</button>
+            <button class="font-btn" onclick="cambiarTamano(0.15)" title="Aumentar letra">A +</button>
+          </div>
+          <button class="btn-print" onclick="window.print()">🖨️ Imprimir</button>
+        </div>
+      </div>
+
+      <!-- Filtros Rápidos de Modalidad -->
+      <div class="filtros-modalidad-wrapper">
+        <span class="filtro-modalidad-label">📌 Modalidad:</span>
+        <div class="filtros-modalidad-pills" id="grupo-modalidad">
+          <button class="pill-filtro active" data-mod="todos" onclick="setFiltroModalidad('todos', this)">
+            🌐 Todos <span class="pill-count" id="count-todos">0</span>
+          </button>
+          <button class="pill-filtro" data-mod="online" onclick="setFiltroModalidad('online', this)" title="Remates con opción de participación online (100% online y mixtos)">
+            💻 Con Opción Online <span class="pill-count" id="count-online">0</span>
+          </button>
+          <button class="pill-filtro" data-mod="presencial" onclick="setFiltroModalidad('presencial', this)" title="Remates exclusivamente presenciales en recinto físico">
+            🏛️ Solo Presencial <span class="pill-count" id="count-presencial">0</span>
+          </button>
+          <button class="pill-filtro" data-mod="mixto" onclick="setFiltroModalidad('mixto', this)" title="Remates presenciales con transmisión y puja online">
+            🔄 Mixtos <span class="pill-count" id="count-mixto">0</span>
+          </button>
+        </div>
       </div>
     </div>
 
@@ -1393,9 +1478,9 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
         contenedor.innerHTML = `
           <div style="background: white; padding: 48px 24px; border-radius: 20px; text-align: center; border: 2px dashed #cbd5e1; margin-top: 10px;">
             <p style="font-size: 1.35rem; font-weight: 800; color: #1e293b; margin-bottom: 8px;">No se encontraron remates con ese criterio.</p>
-            <p style="color: #64748b; font-size: 1.05rem; margin-bottom: 16px;">Prueba buscando por otra ciudad, tipo de bien o borra el texto de búsqueda.</p>
-            <button onclick="limpiarBuscador()" style="padding: 10px 20px; background: #0284c7; color: white; border: none; border-radius: 10px; font-weight: 800; cursor: pointer;">
-              🔄 Ver Todos los Remates
+            <p style="color: #64748b; font-size: 1.05rem; margin-bottom: 16px;">Prueba cambiando el filtro de modalidad o borrando el texto de búsqueda.</p>
+            <button onclick="resetearFiltrosCompletos()" style="padding: 12px 24px; background: #0284c7; color: white; border: none; border-radius: 12px; font-weight: 800; cursor: pointer; font-size: 1rem; box-shadow: 0 3px 10px rgba(2,132,199,0.3);">
+              🔄 Restablecer Filtros y Ver Todos
             </button>
           </div>
         `;
@@ -1561,16 +1646,59 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
       }});
     }}
 
+    let filtroModalidad = 'todos';
+
+    function setFiltroModalidad(mod, btn) {{
+      filtroModalidad = mod;
+      document.querySelectorAll('#grupo-modalidad .pill-filtro').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      filtrarTarjetas();
+    }}
+
+    function actualizarContadoresModalidad() {{
+      const total = remates.length;
+      const online = remates.filter(r => (r.modalidad || '').toUpperCase().includes('ONLINE')).length;
+      const presencial = remates.filter(r => (r.modalidad || '').toUpperCase() === 'PRESENCIAL').length;
+      const mixto = remates.filter(r => (r.modalidad || '').toUpperCase().includes('MIXTO')).length;
+
+      const cTodos = document.getElementById('count-todos');
+      const cOnline = document.getElementById('count-online');
+      const cPres = document.getElementById('count-presencial');
+      const cMixto = document.getElementById('count-mixto');
+
+      if (cTodos) cTodos.textContent = total;
+      if (cOnline) cOnline.textContent = online;
+      if (cPres) cPres.textContent = presencial;
+      if (cMixto) cMixto.textContent = mixto;
+    }}
+
+    function resetearFiltrosCompletos() {{
+      document.getElementById("buscador").value = "";
+      const btnTodos = document.querySelector('#grupo-modalidad .pill-filtro[data-mod="todos"]');
+      setFiltroModalidad('todos', btnTodos);
+    }}
+
     function filtrarTarjetas() {{
       const q = document.getElementById("buscador").value.toLowerCase().trim();
       const btnClear = document.getElementById("btn-limpiar");
       btnClear.style.display = q ? "flex" : "none";
 
-      if (!q) {{ renderizarRemates(remates); return; }}
-      const terminos = q.split(/\\s+/).filter(t => t.length > 0);
+      const terminos = q ? q.split(/\\s+/).filter(t => t.length > 0) : [];
 
       const filtrados = remates.filter(r => {{
-        let texto = (r.comuna + " " + r.region + " " + r.direccion + " " + r.tribunal + " " + r.rol + " " + r.codigo + " " + (r.deudor || "") + " " + (r.detalle || "") + " " + r.articulos.join(" ")).toLowerCase();
+        // 1. Filtro por Modalidad
+        const mod = (r.modalidad || "").toUpperCase();
+        if (filtroModalidad === 'online') {{
+          if (!mod.includes("ONLINE")) return false;
+        }} else if (filtroModalidad === 'presencial') {{
+          if (mod !== "PRESENCIAL") return false;
+        }} else if (filtroModalidad === 'mixto') {{
+          if (!mod.includes("MIXTO")) return false;
+        }}
+
+        // 2. Filtro por Términos de Texto
+        if (terminos.length === 0) return true;
+        let texto = (r.comuna + " " + r.region + " " + r.direccion + " " + r.modalidad + " " + r.tribunal + " " + r.rol + " " + r.codigo + " " + (r.deudor || "") + " " + (r.detalle || "") + " " + r.articulos.join(" ")).toLowerCase();
         if (r.vehiculos && r.vehiculos.length > 0) {{
           for (const v of r.vehiculos) {{
             texto += " " + (v.patente || "") + " " + (v.titulo || "") + " " + (v.anio || "") + " " + (v.color || "") + " " + (v.transmision || "") + " " + (v.traccion || "") + " " + (v.combustible || "") + " " + (v.ubicacion_fisica || "") + " " + (v.tipo || "") + " " + (v.estado_mecanico || "");
@@ -1603,6 +1731,7 @@ def exportar_html(resultados: List[Dict[str, str]], filename: str = "remates_vis
       try {{ localStorage.setItem('remates_font_scale', escala); }} catch(e) {{}}
     }}
 
+    actualizarContadoresModalidad();
     renderizarRemates(remates);
   </script>
 </body>
