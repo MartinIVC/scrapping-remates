@@ -6,9 +6,18 @@ import time
 import unicodedata
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional, Tuple
+from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 from pypdf import PdfReader
+
+def obtener_ahora_chile() -> datetime:
+    """Devuelve la fecha y hora oficial de Chile (Continental) sin tzinfo para comparaciones directas."""
+    try:
+        return datetime.now(ZoneInfo("America/Santiago")).replace(tzinfo=None)
+    except Exception:
+        return datetime.now()
+
 
 BASE_URL = "https://www.boletinconcursal.cl"
 PORTAL_URL = f"{BASE_URL}/boletin/remates"
@@ -695,7 +704,7 @@ def exportar_whatsapp_txt(resultados: List[Dict[str, str]], filename: str = "res
 
     lineas = [
         "🔔 *CATÁLOGO DE REMATES VIGENTES* 🔔",
-        f"📅 Actualizado: {datetime.now().strftime('%d/%m/%Y %H:%M')}\n",
+        f"📅 Actualizado: {obtener_ahora_chile().strftime('%d/%m/%Y %H:%M')}\n",
     ]
 
     for i, r in enumerate(resultados, start=1):
@@ -1622,14 +1631,14 @@ def buscar_remates(
     if filtros_ubicacion is None:
         filtros_ubicacion = []
 
-    ahora = datetime.now()
+    ahora = obtener_ahora_chile()
     fecha_limite_publicacion = ahora - timedelta(days=dias_max_publicacion)
     session = requests.Session()
 
     print("=" * 70)
     print("      BUSCADOR DE REMATES - BOLETÍN CONCURSAL DE CHILE")
     print("=" * 70)
-    print(f"[+] Fecha y hora actual:      {ahora.strftime('%d/%m/%Y %H:%M')}")
+    print(f"[+] Fecha y hora actual (Chile): {ahora.strftime('%d/%m/%Y %H:%M')}")
     print(f"[+] Tipo de bienes:           {tipo_bienes.upper()}")
     print(f"[+] Solo remates vigentes:    {'SÍ (Descarta fechas pasadas)' if solo_vigentes else 'NO'}")
     print(f"[+] Ventana de publicación:   Últimos {dias_max_publicacion} días (Desde {fecha_limite_publicacion.strftime('%d/%m/%Y')})")

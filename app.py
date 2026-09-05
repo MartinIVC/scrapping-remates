@@ -5,7 +5,13 @@ import time
 from datetime import datetime
 from flask import Flask, jsonify, render_template_string, request, send_file
 import requests
-from scraping_remates import buscar_remates, obtener_tokens_csrf, DOWNLOAD_URL, HEADERS
+from scraping_remates import (
+    buscar_remates,
+    obtener_tokens_csrf,
+    obtener_ahora_chile,
+    DOWNLOAD_URL,
+    HEADERS,
+)
 
 app = Flask(__name__)
 
@@ -16,7 +22,7 @@ os.makedirs(PDF_DIR, exist_ok=True)
 estado_busqueda = {
     "ocupado": False,
     "mensaje": "Listo",
-    "ultima_actualizacion": datetime.now().strftime("%d/%m/%Y %H:%M"),
+    "ultima_actualizacion": obtener_ahora_chile().strftime("%d/%m/%Y %H:%M"),
     "total_encontrados": 0,
 }
 
@@ -47,7 +53,7 @@ def tarea_actualizacion_automatica():
                 dias_max_publicacion=40,
                 max_publicaciones=500,
             )
-            estado_busqueda["ultima_actualizacion"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+            estado_busqueda["ultima_actualizacion"] = obtener_ahora_chile().strftime("%d/%m/%Y %H:%M")
         except Exception as e:
             print(f"[Auto-Scheduler] Error en actualización automática: {e}")
 
@@ -162,7 +168,7 @@ def api_buscar():
             generar_archivos=True,
         )
 
-        estado_busqueda["ultima_actualizacion"] = datetime.now().strftime("%d/%m/%Y %H:%M")
+        estado_busqueda["ultima_actualizacion"] = obtener_ahora_chile().strftime("%d/%m/%Y %H:%M")
         estado_busqueda["total_encontrados"] = len(resultados)
 
         return jsonify({
